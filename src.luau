@@ -15,12 +15,14 @@ local Teams = game:GetService("Teams")
 local GameSettings = workspace:FindFirstChild("GameSettings")
 local Content = workspace:FindFirstChild("content")
 
-local Busy = false
-
 local Adding = {}
 local Cache = {}
 
 local function WaitForBlock(CreationDate: number)
+    if game.PlaceId == 12519560096 then
+        return
+    end
+
     repeat
         task.wait()
     until Cache[CreationDate]
@@ -76,7 +78,7 @@ local function Deserialize(Value: any)
 end
 
 local function Save()
-    if Busy or game.PlaceId == 12519560096 then
+    if game.PlaceId == 12519560096 then
         return
     end
 
@@ -177,6 +179,10 @@ local function Save()
 end
 
 local function Load(World)
+    if game.PlaceId == 12519560096 then
+        return
+    end
+
     local BridgeNet2 = require(ReplicatedStorage:WaitForChild("BridgeNet2"))
     local ChangeBridge = BridgeNet2.ClientBridge("ChangeBridge")
     local RunCommand = BridgeNet2.ClientBridge("RunCommand")
@@ -283,8 +289,6 @@ if Content then
 end
 
 if isfile("wub cloner/steps.txt") then
-    Busy = true
-
     local Info = readfile("wub cloner/steps.txt")
     local Id, Amount = string.gsub(Info, "hub", "")
 
@@ -292,7 +296,7 @@ if isfile("wub cloner/steps.txt") then
         if game.PlaceId ~= 12519560096 then
             StarterGui:SetCore("SendNotification", {
                 Title = "wub cloner",
-                Text = "join a world to clone it"
+                Text = "!clone - auto clone world\n!save - save a world\n!load {world_id} - load a saved world\n!id - copy the world id",
             })
 
             delfile("wub cloner/steps.txt")
@@ -319,11 +323,16 @@ if isfile("wub cloner/steps.txt") then
                 repeat
                     task.wait()
                 until #Content:GetChildren() == 5
-
-                Clear()
-                task.wait()
-                Load(World)
             end
+
+            Clear()
+            task.wait()
+            Load(World)
+
+            StarterGui:SetCore("SendNotification", {
+                Title = "wub cloner",
+                Text = "finished cloning "..Id
+            })
 
             delfile("wub cloner/steps.txt")
         end
@@ -332,7 +341,7 @@ else
     if game.PlaceId ~= 12519560096 then
         StarterGui:SetCore("SendNotification", {
             Title = "wub cloner",
-            Text = "type !clone to auto clone the world\ntype !save to save a world\ntype !load {world_id} to load a saved world into YOUR world",
+            Text = "!clone - auto clone world\n!save - save a world\n!load {world_id} - load a saved world\n!id - copy the world id",
         })
     else
         StarterGui:SetCore("SendNotification", {
@@ -356,8 +365,8 @@ Players.LocalPlayer.OnTeleport:Connect(function(State)
     end
 end)
 
-TextChatService.MessageReceived:Connect(function(Message: TextChatMessage)
-    if not Message.TextSource or Message.TextSource.Name ~= Players.LocalPlayer.Name or Busy then
+TextChatService.SendingMessage:Connect(function(Message: TextChatMessage)
+    if not Message.TextSource or Message.TextSource.UserId ~= Players.LocalPlayer.UserId then
         return
     end
     
@@ -366,15 +375,63 @@ TextChatService.MessageReceived:Connect(function(Message: TextChatMessage)
         writefile("wub cloner/steps.txt", "hub"..game.PlaceId)
         
         TeleportService.TeleportInitFailed:Connect(function(Plr: Player)
-            if Busy then
-                return
-            end
-
             if Player.Name == Players.LocalPlayer.Name then
                 TeleportService:Teleport(12519560096, Plr, {Reason = "~ wub cloner ~\ncreating a new world to clone world into"})
             end
         end)
 
         TeleportService:Teleport(12519560096, Players.LocalPlayer, {Reason = "~ wub cloner ~\ncreating a new world to clone world into"})
+    elseif Message.Text == "!save" then
+        Save()
+        
+        StarterGui:SetCore("SendNotification", {
+            Title = "wub cloner",
+            Text = "finished saving "..game.PlaceId
+        })
+    elseif Message.Text == "!id" then
+        setclipboard(tostring(game.PlaceId))
+
+        StarterGui:SetCore("SendNotification", {
+            Title = "wub cloner",
+            Text = "copied "..game.PlaceId.." to clipboard"
+        })
+    else
+        local Split = string.split(Message.Text, " ")
+
+        if Split[1] == "!load" and tonumber(Split[2]) and isfile("wub cloner/"..Split[2]..".txt") then
+            if game.PlaceId ~= 12519560096 then
+                local JSON = readfile("wub cloner/"..Split[2]..".txt")
+                local World = HttpService:JSONDecode(JSON)
+                
+                if ReplicatedStorage:WaitForChild("StartupEvent", 5) and GameSettings:GetAttribute("GameCreationDate") == 0 then
+                    ReplicatedStorage.StartupEvent:FireServer(1, World.Name)
+                    ReplicatedStorage.StartupEvent:FireServer(2, "Canvas")
+                    task.wait()
+                    ReplicatedStorage.StartupEvent:FireServer("done")
+
+                    if Players.LocalPlayer.PlayerGui:FindFirstChild("StartupGui") then
+                        Players.LocalPlayer.PlayerGui.StartupGui:Destroy()
+                    end
+
+                    repeat
+                        task.wait()
+                    until #Content:GetChildren() == 5
+                end
+
+                Clear()
+                task.wait()
+                Load(World)
+
+                StarterGui:SetCore("SendNotification", {
+                    Title = "wub cloner",
+                    Text = "finished loading "..Split[2]
+                })
+            else
+                StarterGui:SetCore("SendNotification", {
+                    Title = "wub cloner",
+                    Text = "join one of your worlds to use the load command"
+                })
+            end
+        end
     end
 end)
