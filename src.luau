@@ -303,7 +303,14 @@ if isfile("wub cloner/steps.txt") then
                 ReplicatedStorage.StartupEvent:FireServer(2, "Canvas")
                 task.wait()
                 ReplicatedStorage.StartupEvent:FireServer("done")
-                Players.LocalPlayer.PlayerGui:WaitForChild("StartupGui"):Destroy()
+
+                if Players.LocalPlayer.PlayerGui:FindFirstChild("StartupGui") then
+                    Players.LocalPlayer.PlayerGui.StartupGui:Destroy()
+                end
+
+                repeat
+                    task.wait()
+                until #Content:GetChildren() == 5
 
                 Clear()
                 task.wait()
@@ -314,6 +321,12 @@ if isfile("wub cloner/steps.txt") then
         end
     end
 end
+
+Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(Gui)
+    if Gui.Name == "StartupGui" then
+        Gui:Destroy()
+    end
+end)
 
 local Check = false
 Players.LocalPlayer.OnTeleport:Connect(function(State)
