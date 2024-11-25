@@ -1,3 +1,9 @@
+if _G.wubcloner then
+    return
+end
+
+_G.wubcloner = true
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
 local TeleportService = game:GetService("TeleportService")
@@ -287,6 +293,11 @@ if isfile("wub cloner/steps.txt") then
 
     if Amount > 0 then
         if game.PlaceId ~= 12519560096 then
+            StarterGui:SetCore("SendNotification", {
+                Title = "wub cloner",
+                Text = "join a world to clone it"
+            })
+
             delfile("wub cloner/steps.txt")
         else
             writefile("wub cloner/steps.txt", Id)
@@ -319,6 +330,18 @@ if isfile("wub cloner/steps.txt") then
 
             delfile("wub cloner/steps.txt")
         end
+    end
+else
+    if game.PlaceId ~= 12519560096 then
+        StarterGui:SetCore("SendNotification", {
+            Title = "wub cloner",
+            Text = "type !clone to auto clone the world\ntype !save to save a world\ntype !load {world_id} to load a saved world into YOUR world",
+        })
+    else
+        StarterGui:SetCore("SendNotification", {
+            Title = "wub cloner",
+            Text = "join a world to clone it"
+        })
     end
 end
 
