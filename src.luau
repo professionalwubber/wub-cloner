@@ -12,9 +12,6 @@ local StarterGui = game:GetService("StarterGui")
 local Players = game:GetService("Players")
 local Teams = game:GetService("Teams")
 
-local TextChannels = TextChatService:WaitForChild("TextChannels")
-local RBXGeneral = TextChannels:WaitForChild("RBXGeneral")
-
 local GameSettings = workspace:FindFirstChild("GameSettings")
 local Content = workspace:FindFirstChild("content")
 
@@ -367,7 +364,6 @@ TextChatService.MessageReceived:Connect(function(Message: TextChatMessage)
     if Message.Text == "!clone" then
         Save()
         writefile("wub cloner/steps.txt", "hub"..game.PlaceId)
-        RBXGeneral:SendAsync("world saved, teleporting to hub")
         
         TeleportService.TeleportInitFailed:Connect(function(Plr: Player)
             if Busy then
