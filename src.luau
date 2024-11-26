@@ -408,10 +408,10 @@ if isfile("wub cloner/steps.txt") then
         end
     else
         if game.PlaceId ~= 12519560096 and isfile("wub cloner/"..Id..".txt") then
-            if ReplicatedStorage:WaitForChild("StartupEvent", 5) and GameSettings:GetAttribute("GameCreationDate") == 0 then
-                local JSON = readfile("wub cloner/"..Id..".txt")
-                local World = HttpService:JSONDecode(JSON)
+            local JSON = readfile("wub cloner/"..Id..".txt")
+            local World = HttpService:JSONDecode(JSON)
 
+            if ReplicatedStorage:WaitForChild("StartupEvent", 5) and GameSettings:GetAttribute("GameCreationDate") == 0 then
                 ReplicatedStorage.StartupEvent:FireServer(1, World.Name)
                 ReplicatedStorage.StartupEvent:FireServer(2, "Canvas")
                 task.wait()
