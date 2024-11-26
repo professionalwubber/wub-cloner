@@ -92,10 +92,8 @@ local function Save()
     local Attributes = BlockProperties.GetAttributes()
 
     local World = {
-        Name = GameSettings:GetAttribute("GameName"),
-        Description = GameSettings:GetAttribute("GameDescription"),
-        Thumbnail = GameSettings:GetAttribute("ImageId"),
-        MaxPlayers = GameSettings:GetAttribute("MaxPlayers"),
+        Name = GameSettings:GetAttribute("GameName") or "failed to get name ig",
+        Description = GameSettings:GetAttribute("GameDescription") or "failed to get description ig",
         Settings = {},
         Blocks = {},
         Zones = {},
