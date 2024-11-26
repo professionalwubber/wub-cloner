@@ -4,6 +4,10 @@ end
 
 _G.wubcloner = true
 
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
 local TeleportService = game:GetService("TeleportService")
@@ -92,10 +96,17 @@ local function Save()
         Description = GameSettings:GetAttribute("GameDescription"),
         Thumbnail = GameSettings:GetAttribute("ImageId"),
         MaxPlayers = GameSettings:GetAttribute("MaxPlayers"),
+        Settings = {},
         Blocks = {},
+        Zones = {},
         Teams = {},
         Stats = {}
     }
+
+    for Name: string, Value: any in pairs(GameSettings.SavedSettings:GetAttributes()) do
+        Name = string.gsub(Name, "_", " ")
+        table.insert(World.Settings, {Name, Serialize(Value)})
+    end
 
     for _, Block in ipairs(Content:GetChildren()) do
         local Id = Block:GetAttribute("PropertiesID")
@@ -160,13 +171,47 @@ local function Save()
 
         if Block:GetAttribute("TypeOf") and Block:FindFirstChild("WiringWire") then
             for _, Wire in ipairs(Block:GetChildren()) do
-                if Wire.Name == "WiringWire" then
+                if Wire.Name == "WiringWire" and Wire:FindFirstChild("OUTPUT") and Wire.OUTPUT.Value then
                     table.insert(ToSave.Connections, {"self", Wire.OUTPUT.Value:GetAttribute("CreationDate")})
                 end
-            end    
+            end
         end
 
         table.insert(World.Blocks, ToSave)
+    end
+
+    for _, Zone in ipairs(workspace.Zones:GetChildren()) do
+        local ZoneProperties = BlockProperties.GetZones(Zone.Name)
+        local Properties = {}
+
+        for Category: string, Info: any in pairs(ZoneProperties) do
+            if Category ~= "Name" then
+                for Name: string, Value: any in pairs(Info) do
+                    if not string.match(Name, "HINT") then
+                        local NewValue
+
+                        if table.find(Value, false, 3) then
+                            local Child = Value[1]
+
+                            if Child then
+                                NewValue = Zone:FindFirstChild(Child, true)[Name]
+                            else
+                                NewValue = Zone[Name]
+                            end
+                        else
+                            NewValue = Zone:GetAttribute(Name)
+                        end
+
+                        Properties[Name] = {Value[1] or Zone.Name, Serialize(NewValue)}
+                    end
+                end
+            end
+        end
+
+        Properties["1"] = Zone.Name
+        Properties["2"] = Serialize(Zone:GetAttribute("OriginalCFrame"))
+
+        table.insert(World.Zones, Properties)
     end
 
     for _, Team: Team in ipairs(Teams:GetTeams()) do
@@ -200,11 +245,13 @@ local function Load(World)
 
     local ChangeAttribute = ReplicatedStorage.events.ChangeAttribute
 
-    ChangeBridge:Fire{
-        "settings",
-        {"Game Name", World.Name},
-        {"Game Description", World.Description}
-    }
+    ChangeBridge:Fire{"settings", {"Game Name", World.Name}}
+    ChangeBridge:Fire{"settings", {"Game Description", World.Description}}
+
+    for _, Setting in ipairs(World.Settings) do
+        Setting[2] = Deserialize(Setting[2])
+        ChangeBridge:Fire{"settings", Setting}
+    end
 
     for _, Team in ipairs(World.Teams) do
         RunCommand:Fire("!team add "..Team.Name.." "..Team.TeamColor)
@@ -224,6 +271,18 @@ local function Load(World)
         if not Stat.Visible then
             RunCommand:Fire("!stat visible "..Stat.Name.." false")
         end
+    end
+
+    for _, Zone in ipairs(World.Zones) do
+        for Name: string, Value: any in pairs(Zone) do
+            if tostring(Name) ~= "1" and tostring(Name) ~= "2" then
+                Zone[Name][2] = Deserialize(Value[2])
+            else
+                Zone[Name] = Deserialize(Value)
+            end
+        end
+
+        ChangeBridge:Fire{"newzone", Zone}
     end
 
     AllBlocksLoaded = false
@@ -281,14 +340,30 @@ end
 local function Clear()
     local BridgeNet2 = require(ReplicatedStorage:WaitForChild("BridgeNet2"))
     local ChangeBridge = BridgeNet2.ClientBridge("ChangeBridge")
+    local RunCommand = BridgeNet2.ClientBridge("RunCommand")
 
     ChangeBridge:Fire{
         "bulkdelete",
         {Content:GetChildren()}
     }
 
+    for _, Zone in ipairs(workspace.Zones:GetChildren()) do
+        ChangeBridge:Fire{
+            "removezone",
+            {Zone}
+        }
+    end
+
+    for _, Stat in ipairs(GameSettings.SavedStats.KnownStats:GetChildren()) do
+        RunCommand:Fire("!stat remove "..Stat.Name)
+    end
+
+    for _, Team in ipairs(Teams:GetTeams()) do
+        RunCommand:Fire("!team remove "..Team.Name)
+    end
+
     task.wait(0.5)
-    if #Content:GetChildren() > 0 then
+    if #Content:GetChildren() > 0 or #workspace.Zones:GetChildren() > 0 or #GameSettings.SavedStats.KnownStats:GetChildren() > 0 or #Teams:GetTeams() > 0 then
         Clear()
     end
 end
