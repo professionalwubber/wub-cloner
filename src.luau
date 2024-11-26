@@ -18,6 +18,8 @@ local Content = workspace:FindFirstChild("content")
 local Adding = {}
 local Cache = {}
 
+local AllBlocksLoaded = false
+
 local function WaitForBlock(CreationDate: number)
     if game.PlaceId == 12519560096 then
         return
@@ -103,6 +105,7 @@ local function Save()
         local ToSave = {
             Properties = {},
             Attributes = {},
+            Connections = {},
             CreationDate = Block:GetAttribute("CreationDate")
         }
 
@@ -153,6 +156,14 @@ local function Save()
 
                 table.insert(ToSave.Attributes, Attribute)
             end
+        end
+
+        if Block:GetAttribute("TypeOf") and Block:FindFirstChild("WiringWire") then
+            for _, Wire in ipairs(Block:GetChildren()) do
+                if Wire.Name == "WiringWire" then
+                    table.insert(ToSave.Connections, {"self", Wire.OUTPUT.Value:GetAttribute("CreationDate")})
+                end
+            end    
         end
 
         table.insert(World.Blocks, ToSave)
@@ -215,6 +226,8 @@ local function Load(World)
         end
     end
 
+    AllBlocksLoaded = false
+
     for _, Block in ipairs(World.Blocks) do
         for Name: string, Value: any in pairs(Block.Properties) do
             if tostring(Name) ~= "1" and tostring(Name) ~= "2" then
@@ -225,13 +238,13 @@ local function Load(World)
         end
 
         table.insert(Adding, Block)
-
-        ChangeBridge:Fire{
-            "build",
-            Block.Properties
-        }
+        ChangeBridge:Fire{"build", Block.Properties}
 
         task.spawn(function()
+            repeat
+                task.wait()
+            until AllBlocksLoaded
+
             for _, Attribute in ipairs(Block.Attributes) do
                 Attribute[2][1] = if Attribute[2][1] == "self" then WaitForBlock(Block.CreationDate) else WaitForBlock(Attribute[2][1])
                 Attribute[2][2] = if Attribute[2][2] == "self" then WaitForBlock(Block.CreationDate) else WaitForBlock(Attribute[2][2])
@@ -242,12 +255,27 @@ local function Load(World)
                 end
 
                 ChangeAttribute:FireServer("createAttribute", Attribute)
-                task.wait()
+                task.wait(0.05)
+            end
+            
+            for _, Connection in ipairs(Block.Connections) do
+                Connection[1] = if Connection[1] == "self" then WaitForBlock(Block.CreationDate) else WaitForBlock(Connection[1])
+                Connection[2] = if Connection[2] == "self" then WaitForBlock(Block.CreationDate) else WaitForBlock(Connection[2])
+            
+                ChangeBridge:Fire{"newLine", Connection}
+                task.wait(0.05)
             end
         end)
 
         task.wait()
     end
+
+    repeat
+        task.wait()
+    until #Content:GetChildren() >= #World.Blocks
+
+    task.wait(0.5)
+    AllBlocksLoaded = true
 end
 
 local function Clear()
