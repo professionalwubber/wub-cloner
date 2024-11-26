@@ -153,7 +153,7 @@ local function Save()
                     [1] = Child.Name,
                     [2] = {
                         [1] = "self",
-                        [2] = Child:FindFirstChild("FOR2") and Child.FOR2.Value ~= Child.FOR1.Value and Child.FOR2.Value:GetAttribute("CreationDate") or "self",
+                        [2] = Child:FindFirstChild("FOR2") and Child.FOR2.Value ~= Child.FOR1.Value and Child.FOR2.Value and Child.FOR2.Value:GetAttribute("CreationDate") or "self",
                         [3] = Serialize(Child:GetAttribute("Face") and Enum.NormalId[Child:GetAttribute("Face")] or Enum.NormalId.Front)
                     },
                     [3] = {}
