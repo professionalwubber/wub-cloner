@@ -237,6 +237,10 @@ local function Load(World)
         return
     end
 
+    repeat
+        task.wait()
+    until Players.LocalPlayer.PlayerGui:FindFirstChild("WubbyCore") and Players.LocalPlayer.PlayerGui.WubbyCore:FindFirstChild("loadframe") and Players.LocalPlayer.PlayerGui.WubbyCore.loadframe.BackgroundTransparency == 1
+
     local BridgeNet2 = require(ReplicatedStorage:WaitForChild("BridgeNet2"))
     local ChangeBridge = BridgeNet2.ClientBridge("ChangeBridge")
     local RunCommand = BridgeNet2.ClientBridge("RunCommand")
