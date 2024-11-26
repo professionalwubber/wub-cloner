@@ -440,6 +440,13 @@ if isfile("wub cloner/steps.txt") then
             })
 
             delfile("wub cloner/steps.txt")
+        elseif game.PlaceId == 12519560096 then
+            StarterGui:SetCore("SendNotification", {
+                Title = "wub cloner",
+                Text = "join a world to clone it"
+            })
+
+            delfile("wub cloner/steps.txt")
         end
     end
 else
