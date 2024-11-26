@@ -107,6 +107,24 @@ local function Save()
     end
 
     for _, Block in ipairs(Content:GetChildren()) do
+        if Block:GetAttribute("TypeOf") and Block:FindFirstChild("WiringWire") then
+            for _, Wire in ipairs(Block:GetChildren()) do
+                if Wire.Name == "WiringWire" and Wire:FindFirstChild("OUTPUT") then
+                    if not Wire.OUTPUT.Value then
+                        local Character = game.Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+                        Character:PivotTo(Block.CFrame)
+                        
+                        local Start = os.clock()
+                        repeat
+                            task.wait()
+                        until Wire.OUTPUT.Value or os.clock() - Start >= 5
+                    end
+                end
+            end
+        end
+    end
+
+    for _, Block in ipairs(Content:GetChildren()) do
         local Id = Block:GetAttribute("PropertiesID")
         local OriginalCFrame = Block:GetAttribute("OriginalCFrame")
         
@@ -169,7 +187,15 @@ local function Save()
 
         if Block:GetAttribute("TypeOf") and Block:FindFirstChild("WiringWire") then
             for _, Wire in ipairs(Block:GetChildren()) do
-                if Wire.Name == "WiringWire" and Wire:FindFirstChild("OUTPUT") and Wire.OUTPUT.Value then
+                if Wire.Name == "WiringWire" and Wire:FindFirstChild("OUTPUT") then
+                    if not Wire.OUTPUT.Value then
+                        (Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()):PivotTo(Block.CFrame)
+                        local Start = os.clock()
+                        repeat
+                            task.wait()
+                        until Wire.OUTPUT.Value or os.clock() - Start >= 5
+                    end
+
                     table.insert(ToSave.Connections, {"self", Wire.OUTPUT.Value:GetAttribute("CreationDate")})
                 end
             end
@@ -376,6 +402,24 @@ end
 
 if Content then
     Content.ChildAdded:Connect(function(Child)
+        task.spawn(function()
+            if Child:GetAttribute("TypeOf") and Child:FindFirstChild("WiringWire") then
+                for _, Wire in ipairs(Child:GetChildren()) do
+                    if Wire.Name == "WiringWire" and Wire:FindFirstChild("OUTPUT") then
+                        if not Wire.OUTPUT.Value then
+                            local Character = game.Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+                            Character:PivotTo(Child.CFrame)
+                            
+                            local Start = os.clock()
+                            repeat
+                                task.wait()
+                            until Wire.OUTPUT.Value or os.clock() - Start >= 10
+                        end
+                    end
+                end
+            end
+        end)
+    
         for Index: number, Block in ipairs(Adding) do
             local OriginalCFrame = Child:GetAttribute("OriginalCFrame")
 
@@ -411,35 +455,44 @@ if isfile("wub cloner/steps.txt") then
             TeleportService:SetTeleportGui(StarterGui.loading)
         end
     else
-        if game.PlaceId ~= 12519560096 and isfile("wub cloner/"..Id..".txt") then
-            local JSON = readfile("wub cloner/"..Id..".txt")
-            local World = HttpService:JSONDecode(JSON)
+        if game.PlaceId ~= 12519560096 then
+            if isfile("wub cloner/"..Id..".txt") then
+                local JSON = readfile("wub cloner/"..Id..".txt")
+                local World = HttpService:JSONDecode(JSON)
 
-            if ReplicatedStorage:WaitForChild("StartupEvent", 5) and GameSettings:GetAttribute("GameCreationDate") == 0 then
-                ReplicatedStorage.StartupEvent:FireServer(1, World.Name)
-                ReplicatedStorage.StartupEvent:FireServer(2, "Canvas")
-                task.wait()
-                ReplicatedStorage.StartupEvent:FireServer("done")
+                if ReplicatedStorage:WaitForChild("StartupEvent", 5) and GameSettings:GetAttribute("GameCreationDate") == 0 then
+                    ReplicatedStorage.StartupEvent:FireServer(1, World.Name)
+                    ReplicatedStorage.StartupEvent:FireServer(2, "Canvas")
+                    task.wait()
+                    ReplicatedStorage.StartupEvent:FireServer("done")
 
-                if Players.LocalPlayer.PlayerGui:FindFirstChild("StartupGui") then
-                    Players.LocalPlayer.PlayerGui.StartupGui:Destroy()
+                    if Players.LocalPlayer.PlayerGui:FindFirstChild("StartupGui") then
+                        Players.LocalPlayer.PlayerGui.StartupGui:Destroy()
+                    end
+
+                    repeat
+                        task.wait()
+                    until #Content:GetChildren() == 5
                 end
 
-                repeat
-                    task.wait()
-                until #Content:GetChildren() == 5
+                Clear()
+                task.wait()
+                Load(World)
+
+                StarterGui:SetCore("SendNotification", {
+                    Title = "wub cloner",
+                    Text = "finished cloning "..Id
+                })
+
+                delfile("wub cloner/steps.txt")
+            else
+                StarterGui:SetCore("SendNotification", {
+                    Title = "wub cloner",
+                    Text = "!clone - auto clone world\n!save - save a world\n!load {world_id} - load a saved world\n!id - copy the world id",
+                })
+
+                delfile("wub cloner/steps.txt")
             end
-
-            Clear()
-            task.wait()
-            Load(World)
-
-            StarterGui:SetCore("SendNotification", {
-                Title = "wub cloner",
-                Text = "finished cloning "..Id
-            })
-
-            delfile("wub cloner/steps.txt")
         elseif game.PlaceId == 12519560096 then
             StarterGui:SetCore("SendNotification", {
                 Title = "wub cloner",
@@ -507,6 +560,24 @@ TextChatService.SendingMessage:Connect(function(Message: TextChatMessage)
             Title = "wub cloner",
             Text = "copied "..game.PlaceId.." to clipboard"
         })
+    elseif Message.Text == "!loadblocks" then
+        for _, Block in ipairs(Content:GetChildren()) do
+            if Block:GetAttribute("TypeOf") and Block:FindFirstChild("WiringWire") then
+                for _, Wire in ipairs(Block:GetChildren()) do
+                    if Wire.Name == "WiringWire" and Wire:FindFirstChild("OUTPUT") then
+                        if not Wire.OUTPUT.Value then
+                            local Character = game.Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()
+                            Character:PivotTo(Block.CFrame)
+                            
+                            local Start = os.clock()
+                            repeat
+                                task.wait()
+                            until Wire.OUTPUT.Value or os.clock() - Start >= 5
+                        end
+                    end
+                end
+            end
+        end
     else
         local Split = string.split(Message.Text, " ")
 
